@@ -13,8 +13,8 @@ def pobierz_pierwsze_dwa_artykuly(nazwa_kategorii):
         for li in ul.find_all('li'):
             a_tag = li.find('a', href=True)
             if a_tag:
-                tytul_artykulu = a_tag.get('title')
-                url_artykulu = 'https://pl.wikipedia.org' + a_tag.get('href')
+                tytul_artykulu = a_tag.get('title').strip()
+                url_artykulu = 'https://pl.wikipedia.org' + a_tag.get('href').strip()
                 artykuly.append({'tytul': tytul_artykulu, 'url': url_artykulu})
                 if len(artykuly) >= 2:
                     return artykuly
@@ -26,11 +26,11 @@ def wyciagnij_linki_wewnetrzne(soup, limit=5):
     if not div_tresci:
         return linki
     for a_tag in div_tresci.find_all('a', href=True):
-        href = a_tag['href']
+        href = a_tag['href'].strip()
         if href.startswith('/wiki/') and ':' not in href[6:]:
-            tytul_linku = a_tag.get('title')
+            tytul_linku = a_tag.get('title').strip()
             if tytul_linku:
-                linki.append(tytul_linku.strip())
+                linki.append(tytul_linku)
                 if len(linki) >= limit:
                     break
     return linki
@@ -41,13 +41,13 @@ def wyciagnij_url_obrazkow(soup, limit=3):
     if not div_tresci:
         return obrazki
     for img_tag in div_tresci.find_all('img'):
-        img_src = img_tag.get('src')
+        img_src = img_tag.get('src').strip()
         if img_src:
             if img_src.startswith('//'):
                 img_src = img_src
             elif img_src.startswith('/'):
                 img_src = 'https://pl.wikipedia.org' + img_src
-            obrazki.append(img_src.strip())
+            obrazki.append(img_src)
             if len(obrazki) >= limit:
                 break
     return obrazki
@@ -59,9 +59,9 @@ def wyciagnij_zrodla_zewnetrzne(soup, limit=3):
         return zrodla
     for li in sekcja_przypisow.find_all('li'):
         for a_tag in li.find_all('a', href=True):
-            href = a_tag['href'].replace("&amp;", "&")
+            href = a_tag['href'].replace("&amp;", "&").strip()
             if href.startswith('http'):
-                zrodla.append(href.strip())
+                zrodla.append(href)
                 if len(zrodla) >= limit:
                     return zrodla
     return zrodla
@@ -72,9 +72,9 @@ def wyciagnij_kategorie(soup, limit=3):
     if not div_kategorii:
         return kategorie
     for a_tag in div_kategorii.find_all('a'):
-        nazwa_kategorii = a_tag.get_text()
+        nazwa_kategorii = a_tag.get_text().strip()
         if nazwa_kategorii != 'Kategorie':
-            kategorie.append(nazwa_kategorii.strip())
+            kategorie.append(nazwa_kategorii)
             if len(kategorie) >= limit:
                 break
     return kategorie
@@ -88,10 +88,11 @@ def przetworz_artykuly(artykuly):
         zrodla_zewnetrzne = wyciagnij_zrodla_zewnetrzne(soup)
         kategorie = wyciagnij_kategorie(soup)
         
-        linki_wewnetrzne = ' | '.join(linki_wewnetrzne)
-        url_obrazkow = ' | '.join(url_obrazkow)
-        zrodla_zewnetrzne = ' | '.join(zrodla_zewnetrzne)
-        kategorie = ' | '.join(kategorie)
+        # Usuwanie białych znaków na końcach
+        linki_wewnetrzne = ' | '.join(linki_wewnetrzne).strip()
+        url_obrazkow = ' | '.join(url_obrazkow).strip()
+        zrodla_zewnetrzne = ' | '.join(zrodla_zewnetrzne).strip()
+        kategorie = ' | '.join(kategorie).strip()
         
         print(linki_wewnetrzne)
         print(url_obrazkow)
@@ -99,6 +100,6 @@ def przetworz_artykuly(artykuly):
         print(kategorie)
 
 if __name__ == "__main__":
-    nazwa_kategorii = input()
+    nazwa_kategorii = input().strip()
     artykuly = pobierz_pierwsze_dwa_artykuly(nazwa_kategorii)
     przetworz_artykuly(artykuly)
