@@ -33,8 +33,6 @@ def wyciagnij_linki_wewnetrzne(soup, limit=5):
                 linki.append(tytul_linku.strip())
                 if len(linki) >= limit:
                     break
-    linki = list(set(linki))  
-    linki.sort()  
     return linki
 
 def wyciagnij_url_obrazkow(soup, limit=3):
@@ -52,26 +50,20 @@ def wyciagnij_url_obrazkow(soup, limit=3):
             obrazki.append(img_src.strip())
             if len(obrazki) >= limit:
                 break
-    obrazki = list(set(obrazki)) 
-    obrazki.sort() 
     return obrazki
 
 def wyciagnij_zrodla_zewnetrzne(soup, limit=3):
     zrodla = []
-    przypisy = soup.find('ol', {'class': 'references'})
-    if not przypisy:
+    sekcja_przypisow = soup.find('ol', class_='references')
+    if not sekcja_przypisow:
         return zrodla
-    for li in przypisy.find_all('li'):
+    for li in sekcja_przypisow.find_all('li'):
         for a_tag in li.find_all('a', href=True):
             href = a_tag['href'].replace("&amp;", "&")
             if href.startswith('http'):
                 zrodla.append(href.strip())
                 if len(zrodla) >= limit:
-                    break
-        if len(zrodla) >= limit:
-            break
-    zrodla = list(set(zrodla))  
-    zrodla.sort()  
+                    return zrodla
     return zrodla
 
 def wyciagnij_kategorie(soup, limit=3):
@@ -85,8 +77,6 @@ def wyciagnij_kategorie(soup, limit=3):
             kategorie.append(nazwa_kategorii.strip())
             if len(kategorie) >= limit:
                 break
-    kategorie = list(set(kategorie))  
-    kategorie.sort()  
     return kategorie
 
 def przetworz_artykuly(artykuly):
@@ -97,22 +87,16 @@ def przetworz_artykuly(artykuly):
         url_obrazkow = wyciagnij_url_obrazkow(soup)
         zrodla_zewnetrzne = wyciagnij_zrodla_zewnetrzne(soup)
         kategorie = wyciagnij_kategorie(soup)
-        if linki_wewnetrzne:
-            print(' | '.join(linki_wewnetrzne))
-        else:
-            print()
-        if url_obrazkow:
-            print(' | '.join(url_obrazkow))
-        else:
-            print()
-        if zrodla_zewnetrzne:
-            print(' | '.join(zrodla_zewnetrzne))
-        else:
-            print()
-        if kategorie:
-            print(' | '.join(kategorie))
-        else:
-            print()
+        
+        linki_wewnetrzne = ' | '.join(linki_wewnetrzne)
+        url_obrazkow = ' | '.join(url_obrazkow)
+        zrodla_zewnetrzne = ' | '.join(zrodla_zewnetrzne)
+        kategorie = ' | '.join(kategorie)
+        
+        print(linki_wewnetrzne)
+        print(url_obrazkow)
+        print(zrodla_zewnetrzne)
+        print(kategorie)
 
 if __name__ == "__main__":
     nazwa_kategorii = input()
