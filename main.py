@@ -33,7 +33,8 @@ def wyciagnij_linki_wewnetrzne(soup, limit=5):
                 linki.append(tytul_linku.strip())
                 if len(linki) >= limit:
                     break
-    linki.sort()  # Dodaj sortowanie, aby zapewnić spójną kolejność
+    linki = list(set(linki))  
+    linki.sort()  
     return linki
 
 def wyciagnij_url_obrazkow(soup, limit=3):
@@ -45,12 +46,14 @@ def wyciagnij_url_obrazkow(soup, limit=3):
         img_src = img_tag.get('src')
         if img_src:
             if img_src.startswith('//'):
-                img_src = img_src  # Zostawiamy link w oryginalnym formacie
+                img_src = img_src
             elif img_src.startswith('/'):
                 img_src = 'https://pl.wikipedia.org' + img_src
             obrazki.append(img_src.strip())
             if len(obrazki) >= limit:
                 break
+    obrazki = list(set(obrazki)) 
+    obrazki.sort() 
     return obrazki
 
 def wyciagnij_zrodla_zewnetrzne(soup, limit=3):
@@ -67,6 +70,8 @@ def wyciagnij_zrodla_zewnetrzne(soup, limit=3):
                     break
         if len(zrodla) >= limit:
             break
+    zrodla = list(set(zrodla))  
+    zrodla.sort()  
     return zrodla
 
 def wyciagnij_kategorie(soup, limit=3):
@@ -80,6 +85,8 @@ def wyciagnij_kategorie(soup, limit=3):
             kategorie.append(nazwa_kategorii.strip())
             if len(kategorie) >= limit:
                 break
+    kategorie = list(set(kategorie))  
+    kategorie.sort()  
     return kategorie
 
 def przetworz_artykuly(artykuly):
