@@ -44,7 +44,7 @@ def wyciagnij_url_obrazkow(soup, limit=3):
         img_src = img_tag.get('src')
         if img_src:
             if img_src.startswith('//'):
-                img_src = 'https:' + img_src
+                img_src = img_src
             elif img_src.startswith('/'):
                 img_src = 'https://pl.wikipedia.org' + img_src
             obrazki.append(img_src)
@@ -59,7 +59,7 @@ def wyciagnij_zrodla_zewnetrzne(soup, limit=3):
         return zrodla
     for li in przypisy.find_all('li'):
         for a_tag in li.find_all('a', href=True):
-            href = a_tag['href']
+            href = a_tag['href'].replace("&amp;", "&")
             if href.startswith('http'):
                 zrodla.append(href.strip())
                 if len(zrodla) >= limit:
