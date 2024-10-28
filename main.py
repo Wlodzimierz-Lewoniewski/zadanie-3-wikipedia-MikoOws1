@@ -61,7 +61,7 @@ def wyciagnij_zrodla_zewnetrzne(soup, limit=3):
         for a_tag in li.find_all('a', href=True):
             href = a_tag['href']
             if href.startswith('http'):
-                zrodla.append(href)
+                zrodla.append(href.strip())
                 if len(zrodla) >= limit:
                     break
         if len(zrodla) >= limit:
