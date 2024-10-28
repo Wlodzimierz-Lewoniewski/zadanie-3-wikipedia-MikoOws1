@@ -33,6 +33,7 @@ def wyciagnij_linki_wewnetrzne(soup, limit=5):
                 linki.append(tytul_linku.strip())
                 if len(linki) >= limit:
                     break
+    linki.sort()  # Dodaj sortowanie, aby zapewnić spójną kolejność
     return linki
 
 def wyciagnij_url_obrazkow(soup, limit=3):
@@ -44,10 +45,10 @@ def wyciagnij_url_obrazkow(soup, limit=3):
         img_src = img_tag.get('src')
         if img_src:
             if img_src.startswith('//'):
-                img_src = img_src
+                img_src = img_src  # Zostawiamy link w oryginalnym formacie
             elif img_src.startswith('/'):
                 img_src = 'https://pl.wikipedia.org' + img_src
-            obrazki.append(img_src)
+            obrazki.append(img_src.strip())
             if len(obrazki) >= limit:
                 break
     return obrazki
