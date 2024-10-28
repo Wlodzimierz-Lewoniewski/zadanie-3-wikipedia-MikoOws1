@@ -1,110 +1,112 @@
-import re
 import requests
+from bs4 import BeautifulSoup
 
-def pobierz_pierwsze_dwa_art(nazwa_kat):
-    url_kat = f'https://pl.wikipedia.org/wiki/Kategoria:{nazwa_kat.replace(" ", "_")}'
-    odp = requests.get(url_kat)
-    zaw_html = odp.text
+def pobierz_pierwsze_dwa_artykuly(nazwa_kategorii):
+    url_kategorii = f'https://pl.wikipedia.org/wiki/Kategoria:{nazwa_kategorii.replace(" ", "_")}'
+    odpowiedz = requests.get(url_kategorii)
+    soup = BeautifulSoup(odpowiedz.content, 'html.parser')
+    mw_strony = soup.find('div', {'id': 'mw-pages'})
+    artykuly = []
+    if not mw_strony:
+        return artykuly
+    for ul in mw_strony.find_all('ul'):
+        for li in ul.find_all('li'):
+            a_tag = li.find('a', href=True)
+            if a_tag:
+                tytul_artykulu = a_tag.get('title')
+                url_artykulu = 'https://pl.wikipedia.org' + a_tag.get('href')
+                artykuly.append({'tytul': tytul_artykulu, 'url': url_artykulu})
+                if len(artykuly) >= 2:
+                    return artykuly
+    return artykuly
 
-    wzorzec = r'<div class="mw-category-group">.*?<ul>(.*?)</ul>.*?</div>'
-    dopas = re.findall(wzorzec, zaw_html, re.DOTALL)
+def wyciagnij_linki_wewnetrzne(soup, limit=5):
+    linki = []
+    div_tresci = soup.find('div', {'id': 'mw-content-text'})
+    if not div_tresci:
+        return linki
+    for a_tag in div_tresci.find_all('a', href=True):
+        href = a_tag['href']
+        if href.startswith('/wiki/') and ':' not in href[6:]:
+            tytul_linku = a_tag.get('title')
+            if tytul_linku:
+                linki.append(tytul_linku.strip())
+                if len(linki) >= limit:
+                    break
+    return linki
 
-    arty = []
-    for dop in dopas:
-        linki = re.findall(r'<li><a href="(/wiki/[^"]+)" title="([^"]+)">', dop)
-        for href, tyt in linki:
-            url_art = 'https://pl.wikipedia.org' + href
-            arty.append({'tytul': tyt, 'url': url_art})
-            if len(arty) >= 2:
-                return arty
-    return arty
-
-def pobierz_div_zaw(zaw_html):
-    wzorzec = r'<div id="mw-content-text".*?>(.*?)<div id="catlinks"'
-    dopas = re.search(wzorzec, zaw_html, re.DOTALL)
-    if dopas:
-        return dopas.group(1)
-    return ''
-
-def wyciagnij_linki_wew(zaw_html, limit=5):
-    zaw = pobierz_div_zaw(zaw_html)
-    wzorzec = r'<a[^>]*href="/wiki/([^":#]+)"[^>]*title="([^"]+)"[^>]*>'
-    linki = re.findall(wzorzec, zaw)
-    linki_wew = []
-    for href, tyt in linki:
-        linki_wew.append(tyt)
-        if len(linki_wew) >= limit:
-            break
-    return linki_wew
-
-def wyciagnij_url_obr(zaw_html, limit=3):
-    zaw = pobierz_div_zaw(zaw_html)
-    wzorzec = r'<img[^>]*src="([^"]+)"[^>]*>'
-    obrazy = re.findall(wzorzec, zaw)
-    url_obr = []
-    for src in obrazy:
-        if src.startswith('//'):
-            url_obr.append(src)
-        elif src.startswith('/'):
-            url_obr.append('https://pl.wikipedia.org' + src)
-        else:
-            url_obr.append(src)
-        if len(url_obr) >= limit:
-            break
-    return url_obr
-
-def wyciagnij_zew_zrodla(zaw_html, limit=3):
-    wzorzec_przypisy = r'<ol class="references">(.*?)</ol>'
-    przypisy = re.findall(wzorzec_przypisy, zaw_html, re.DOTALL)
-    zrodla = []
-    if przypisy:
-        linki = re.findall(r'<a[^>]*href="(http[^"]+)"[^>]*>', przypisy[0])
-        for href in linki:
-            zrodla.append(href)
-            if len(zrodla) >= limit:
+def wyciagnij_url_obrazkow(soup, limit=3):
+    obrazki = []
+    div_tresci = soup.find('div', {'id': 'mw-content-text'})
+    if not div_tresci:
+        return obrazki
+    for img_tag in div_tresci.find_all('img'):
+        img_src = img_tag.get('src')
+        if img_src:
+            if img_src.startswith('//'):
+                img_src = img_src
+            elif img_src.startswith('/'):
+                img_src = 'https://pl.wikipedia.org' + img_src
+            obrazki.append(img_src)
+            if len(obrazki) >= limit:
                 break
+    return obrazki
+
+def wyciagnij_zrodla_zewnetrzne(soup, limit=3):
+    zrodla = []
+    przypisy = soup.find('ol', {'class': 'references'})
+    if not przypisy:
+        return zrodla
+    for li in przypisy.find_all('li'):
+        for a_tag in li.find_all('a', href=True):
+            href = a_tag['href']
+            if href.startswith('http'):
+                zrodla.append(href)
+                if len(zrodla) >= limit:
+                    break
+        if len(zrodla) >= limit:
+            break
     return zrodla
 
-def wyciagnij_kat(zaw_html, limit=3):
-    wzorzec = r'<div id="catlinks".*?<ul>(.*?)</ul>.*?</div>'
-    dopas = re.findall(wzorzec, zaw_html, re.DOTALL)
-    kat = []
-    if dopas:
-        linki = re.findall(r'<a [^>]*title="Kategoria:([^"]+)"[^>]*>', dopas[0])
-        for kategoria in linki:
-            kat.append(kategoria)
-            if len(kat) >= limit:
+def wyciagnij_kategorie(soup, limit=3):
+    kategorie = []
+    div_kategorii = soup.find('div', {'id': 'catlinks'})
+    if not div_kategorii:
+        return kategorie
+    for a_tag in div_kategorii.find_all('a'):
+        nazwa_kategorii = a_tag.get_text()
+        if nazwa_kategorii != 'Kategorie':
+            kategorie.append(nazwa_kategorii)
+            if len(kategorie) >= limit:
                 break
-    return kat
+    return kategorie
 
-def przetworz_art(arty):
-    for art in arty:
-        odp = requests.get(art['url'])
-        zaw_html = odp.text
-
-        linki_wew = wyciagnij_linki_wew(zaw_html)
-        url_obr = wyciagnij_url_obr(zaw_html)
-        zew_zrodla = wyciagnij_zew_zrodla(zaw_html)
-        kat = wyciagnij_kat(zaw_html)
-
-        if linki_wew:
-            print(' | '.join(linki_wew))
+def przetworz_artykuly(artykuly):
+    for artykul in artykuly:
+        odpowiedz = requests.get(artykul['url'])
+        soup = BeautifulSoup(odpowiedz.content, 'html.parser')
+        linki_wewnetrzne = wyciagnij_linki_wewnetrzne(soup)
+        url_obrazkow = wyciagnij_url_obrazkow(soup)
+        zrodla_zewnetrzne = wyciagnij_zrodla_zewnetrzne(soup)
+        kategorie = wyciagnij_kategorie(soup)
+        if linki_wewnetrzne:
+            print(' | '.join(linki_wewnetrzne))
         else:
             print()
-        if url_obr:
-            print(' | '.join(url_obr))
+        if url_obrazkow:
+            print(' | '.join(url_obrazkow))
         else:
             print()
-        if zew_zrodla:
-            print(' | '.join(zew_zrodla))
+        if zrodla_zewnetrzne:
+            print(' | '.join(zrodla_zewnetrzne))
         else:
             print()
-        if kat:
-            print(' | '.join(kat))
+        if kategorie:
+            print(' | '.join(kategorie))
         else:
             print()
 
 if __name__ == "__main__":
-    nazwa_kat = input()
-    arty = pobierz_pierwsze_dwa_art(nazwa_kat)
-    przetworz_art(arty)
+    nazwa_kategorii = input()
+    artykuly = pobierz_pierwsze_dwa_artykuly(nazwa_kategorii)
+    przetworz_artykuly(artykuly)
