@@ -44,7 +44,7 @@ def wyciagnij_url_obrazkow(soup, limit=3):
         img_src = img_tag.get('src')
         if img_src:
             if img_src.startswith('//'):
-                img_src = img_src
+                img_src = 'https:' + img_src
             elif img_src.startswith('/'):
                 img_src = 'https://pl.wikipedia.org' + img_src
             obrazki.append(img_src)
@@ -76,7 +76,7 @@ def wyciagnij_kategorie(soup, limit=3):
     for a_tag in div_kategorii.find_all('a'):
         nazwa_kategorii = a_tag.get_text()
         if nazwa_kategorii != 'Kategorie':
-            kategorie.append(nazwa_kategorii)
+            kategorie.append(nazwa_kategorii.strip())
             if len(kategorie) >= limit:
                 break
     return kategorie
